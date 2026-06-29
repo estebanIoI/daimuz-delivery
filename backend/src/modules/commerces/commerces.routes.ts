@@ -78,17 +78,39 @@ router.post('/', authenticate, authorize('admin'), async (req: AuthRequest, res:
   }
 });
 
-// PATCH /commerces/:id — admin actualiza comercio
+// PATCH /commerces/:id — admin actualiza comercio (parcial)
 router.patch('/:id', authenticate, authorize('admin'), async (req: AuthRequest, res: Response) => {
   try {
-    const { name, description, is_open, logo_url, banner_url, avg_delivery_time, delivery_fee, sort_order } = req.body;
-    await pool.query(
-      'UPDATE commerces SET name=?, description=?, is_open=?, logo_url=?, banner_url=?, avg_delivery_time=?, delivery_fee=?, sort_order=? WHERE id=?',
-      [name, description, is_open, logo_url, banner_url, avg_delivery_time, delivery_fee, sort_order, req.params.id]
-    );
+    const allowed = ['name', 'description', 'is_open', 'logo_url', 'banner_url', 'city', 'avg_delivery_time', 'delivery_fee', 'rating', 'sort_order'];
+    const fields: string[] = [];
+    const values: any[] = [];
+    for (const key of allowed) {
+      if (key in req.body) {
+        fields.push(`${key} = ?`);
+        values.push(req.body[key]);
+      }
+    }
+    if (fields.length === 0) {
+      res.status(400).json({ error: 'Nada para actualizar' });
+      return;
+    }
+    values.push(req.params.id);
+    await pool.query(`UPDATE commerces SET ${fields.join(', ')} WHERE id = ?`, values);
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Error al actualizar comercio' });
+  }
+});
+
+// DELETE /commerces/:id — admin elimina comercio
+router.delete('/:id', authenticate, authorize('admin'), async (req: AuthRequest, res: Response) => {
+  try {
+    await pool.query('UPDATE products SET is_available = 0 WHERE commerce_id = ?', [req.params.id]);
+    await pool.query('UPDATE categories SET is_active = 0 WHERE commerce_id = ?', [req.params.id]);
+    await pool.query('DELETE FROM commerces WHERE id = ?', [req.params.id]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al eliminar comercio' });
   }
 });
 

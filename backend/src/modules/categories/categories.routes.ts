@@ -6,10 +6,15 @@ import { authenticate, authorize } from '../../middleware/auth';
 
 const router = Router();
 
-router.get('/', async (_req: AuthRequest, res: Response) => {
+router.get('/', async (req: AuthRequest, res: Response) => {
   try {
+    const { commerce_id } = req.query;
+    const params: any[] = [];
+    let commerceFilter = '';
+    if (commerce_id) { commerceFilter = 'AND c.commerce_id = ?'; params.push(commerce_id); }
     const [rows] = await pool.query(
-      'SELECT c.*, COUNT(p.id) as product_count FROM categories c LEFT JOIN products p ON c.id = p.category_id AND p.is_available = 1 WHERE c.is_active = 1 GROUP BY c.id ORDER BY c.sort_order'
+      `SELECT c.*, COUNT(p.id) as product_count FROM categories c LEFT JOIN products p ON c.id = p.category_id AND p.is_available = 1 WHERE c.is_active = 1 ${commerceFilter} GROUP BY c.id ORDER BY c.sort_order`,
+      params
     );
     res.json({ categories: rows });
   } catch (error) {
@@ -31,17 +36,17 @@ router.get('/:id/products', async (req: AuthRequest, res: Response) => {
 
 router.post('/', authenticate, authorize('admin'), async (req: AuthRequest, res: Response) => {
   try {
-    const { name, image_url, sort_order } = req.body;
+    const { commerce_id, name, image_url, sort_order } = req.body;
     if (!name) {
       res.status(400).json({ error: 'name requerido' });
       return;
     }
     const id = uuid();
     await pool.query(
-      'INSERT INTO categories (id, name, image_url, sort_order, is_active) VALUES (?, ?, ?, ?, 1)',
-      [id, name, image_url || null, sort_order || 0]
+      'INSERT INTO categories (id, commerce_id, name, image_url, sort_order, is_active) VALUES (?, ?, ?, ?, ?, 1)',
+      [id, commerce_id || null, name, image_url || null, sort_order || 0]
     );
-    res.status(201).json({ category: { id, name, image_url, sort_order, is_active: 1 } });
+    res.status(201).json({ category: { id, commerce_id, name, image_url, sort_order, is_active: 1 } });
   } catch (error) {
     res.status(500).json({ error: 'Error al crear categoría' });
   }

@@ -97,7 +97,7 @@ export default function HomePage() {
           </div>
 
           {/* Filtros */}
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
             {CATEGORY_FILTERS.map((f) => (
               <button
                 key={f}

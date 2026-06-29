@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useAuthStore } from "@/stores/authStore";
 import { api } from "@/lib/api";
 
 interface Dealer { id: string; name: string; avatar_url: string | null; completed_orders: number; rating_avg: number; xp: number; rank: string; }
@@ -10,8 +9,7 @@ interface Dealer { id: string; name: string; avatar_url: string | null; complete
 const RANK_COLOR: Record<string, string> = { Bronze: "text-amber-600 bg-amber-50", Silver: "text-gray-500 bg-gray-100", Gold: "text-yellow-600 bg-yellow-50", Elite: "text-purple-600 bg-purple-50" };
 const RANK_EMOJI: Record<string, string> = { Bronze: "🥉", Silver: "🥈", Gold: "🥇", Elite: "💎" };
 
-export default function SelectDealerPage() {
-  const user = useAuthStore((s) => s.user);
+function SelectDealerContent() {
   const router = useRouter();
   const params = useSearchParams();
   const orderId = params.get("order_id");
@@ -21,12 +19,17 @@ export default function SelectDealerPage() {
   const [selecting, setSelecting] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user || !orderId) { router.push("/"); return; }
+    // Sin order_id no tiene sentido esta pantalla
+    if (!orderId) { router.push("/"); return; }
+    // Cargamos dealers mientras exista token (el objeto user puede no haber
+    // hidratado todavía tras la navegación desde checkout)
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    if (!token) { router.push("/login"); return; }
     api<{ dealers: Dealer[] }>("/dealers/available")
       .then((d) => setDealers(d.dealers || []))
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [user, orderId]);
+  }, [orderId]);
 
   const handleSelect = async (dealerId: string) => {
     if (!orderId) return;
@@ -39,9 +42,8 @@ export default function SelectDealerPage() {
     }
   };
 
-  if (!user) return null;
-
   return (
+    <>
     <div className="min-h-screen flex flex-col bg-[#f5f5f5]">
       {/* Header */}
       <header className="bg-white shadow-sm">
@@ -110,5 +112,14 @@ export default function SelectDealerPage() {
         )}
       </main>
     </div>
+    </>
+  );
+}
+
+export default function SelectDealerPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-[#25c462] border-t-transparent rounded-full animate-spin" /></div>}>
+      <SelectDealerContent />
+    </Suspense>
   );
 }

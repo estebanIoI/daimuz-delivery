@@ -106,7 +106,7 @@ export default function DealerOrderPage() {
       const uploadData = await apiUpload(file);
       await api(`/chat/orders/${id}/messages`, {
         method: "POST",
-        body: { image_url: `http://localhost:4000${uploadData.url}`, message_type: "image", message: "" },
+        body: { image_url: uploadData.url, message_type: "image", message: "" },
       });
       loadOrder();
     } catch {

@@ -13,7 +13,7 @@ export default function CartPage() {
   const DELIVERY_FEE = 3900;
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f5f5f5] pb-24">
+    <div className="min-h-screen flex flex-col bg-[#f5f5f5] pb-44">
       {/* Header */}
       <header className="bg-white sticky top-0 z-40 shadow-sm">
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center gap-3">
@@ -34,8 +34,8 @@ export default function CartPage() {
           <div className="flex flex-col items-center justify-center py-24 space-y-4">
             <div className="text-7xl">🛒</div>
             <p className="text-gray-500 font-medium">Tu carrito está vacío</p>
-            <button onClick={() => router.push("/menu")} className="bg-[#25c462] text-white px-8 py-3 rounded-2xl font-semibold hover:bg-[#1aaa52] transition-colors">
-              Ver menú
+            <button onClick={() => router.push("/")} className="bg-[#25c462] text-white px-8 py-3 rounded-2xl font-semibold hover:bg-[#1aaa52] transition-colors">
+              Ver comercios
             </button>
           </div>
         ) : (
@@ -80,15 +80,17 @@ export default function CartPage() {
         )}
       </main>
 
-      {/* CTA fijo */}
+      {/* CTA fijo — encima del BottomNav */}
       {items.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-4 shadow-lg">
-          <button
-            onClick={() => user ? router.push("/checkout") : router.push("/login")}
-            className="w-full bg-[#25c462] text-white py-4 rounded-2xl font-semibold text-base hover:bg-[#1aaa52] active:scale-[0.98] transition-all"
-          >
-            Ir a pagar · ${(total() + DELIVERY_FEE).toLocaleString("es-CO")}
-          </button>
+        <div className="fixed bottom-16 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 shadow-lg">
+          <div className="max-w-lg mx-auto">
+            <button
+              onClick={() => user ? router.push("/checkout") : router.push("/login")}
+              className="w-full bg-[#25c462] text-white py-4 rounded-2xl font-semibold text-base hover:bg-[#1aaa52] active:scale-[0.98] transition-all"
+            >
+              Ir a pagar · ${(total() + DELIVERY_FEE).toLocaleString("es-CO")}
+            </button>
+          </div>
         </div>
       )}
 
