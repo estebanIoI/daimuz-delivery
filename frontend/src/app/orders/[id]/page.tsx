@@ -4,7 +4,6 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/authStore";
 import { api, apiUpload } from "@/lib/api";
-import { Navbar } from "@/components/Navbar";
 import { BottomNav } from "@/components/BottomNav";
 
 interface Message {
@@ -27,6 +26,13 @@ interface OrderDetail {
   delivery_address: string;
   created_at: string;
   dealer_id: string | null;
+  validation_id: string | null;
+}
+
+interface OrderValidation {
+  validation_code: string;
+  qr_token: string;
+  validated: number;
 }
 
 interface TrackingPoint {
@@ -52,6 +58,7 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [tracking, setTracking] = useState<TrackingPoint | null>(null);
+  const [validation, setValidation] = useState<OrderValidation | null>(null);
   const [newMsg, setNewMsg] = useState("");
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -78,6 +85,12 @@ export default function OrderDetailPage() {
       setOrder(data.order);
       setMessages(data.messages || []);
       setTracking(data.tracking);
+      if (data.order.validation_id) {
+        try {
+          const vData = await api<{ validation: OrderValidation }>(`/orders/${id}/validation`);
+          setValidation(vData.validation);
+        } catch { /* ignore */ }
+      }
       setTimeout(() => {
         scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
       }, 100);
@@ -126,8 +139,7 @@ export default function OrderDetailPage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
+    <div className="min-h-screen flex flex-col bg-[#f5f5f5]">
       <main className="flex-1 max-w-lg mx-auto w-full flex flex-col">
         {order && (
           <>
@@ -143,7 +155,7 @@ export default function OrderDetailPage() {
                     <div
                       className={`w-3 h-3 rounded-full ${
                         i <= currentStep && order.status !== "cancelled"
-                          ? "bg-[#ff6b35]"
+                          ? "bg-[#25c462]"
                           : "bg-gray-200"
                       }`}
                     />
@@ -151,7 +163,7 @@ export default function OrderDetailPage() {
                       <div
                         className={`flex-1 h-0.5 ${
                           i < currentStep && order.status !== "cancelled"
-                            ? "bg-[#ff6b35]"
+                            ? "bg-[#25c462]"
                             : "bg-gray-200"
                         }`}
                       />
@@ -162,6 +174,28 @@ export default function OrderDetailPage() {
               <p className="text-xs text-gray-500">
                 {STATUS_LABELS[order.status]} · {order.delivery_address}
               </p>
+
+              {/* Código de validación QR */}
+              {validation && !validation.validated && order.status !== "delivered" && (
+                <div className="mt-3 bg-[#f0fdf4] border border-[#25c462]/30 rounded-xl p-3 text-center">
+                  <p className="text-xs text-gray-500 mb-1">Muestra este código al dealer</p>
+                  <p className="text-3xl font-black text-gray-900 tracking-widest font-mono">{validation.validation_code}</p>
+                  <p className="text-[10px] text-gray-400 mt-1">Código de validación de entrega</p>
+                </div>
+              )}
+              {validation?.validated === 1 && (
+                <div className="mt-2 bg-green-50 rounded-xl p-2 text-center">
+                  <p className="text-xs text-green-600 font-semibold">✅ Entrega validada</p>
+                </div>
+              )}
+              {!order.dealer_id && order.status === "pending" && (
+                <button
+                  onClick={() => router.push(`/checkout/dealers?order_id=${order.id}`)}
+                  className="mt-2 w-full bg-[#25c462] text-white py-2 rounded-xl text-xs font-semibold hover:bg-[#1aaa52]"
+                >
+                  🛵 Elegir dealer
+                </button>
+              )}
             </div>
 
             <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3 max-h-[50vh]">
@@ -175,7 +209,7 @@ export default function OrderDetailPage() {
                       msg.message_type === "system"
                         ? "bg-gray-100 text-gray-500 text-xs text-center mx-auto"
                         : msg.sender_id === user.id
-                        ? "bg-[#ff6b35] text-white"
+                        ? "bg-[#25c462] text-white"
                         : "bg-gray-100 text-gray-900"
                     }`}
                   >
@@ -221,7 +255,7 @@ export default function OrderDetailPage() {
                   value={newMsg}
                   onChange={(e) => setNewMsg(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                  className="flex-1 border border-gray-200 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6b35] focus:border-transparent"
+                  className="flex-1 border border-gray-200 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#25c462] focus:border-transparent"
                   placeholder={
                     order.status === "pending"
                       ? "Chat habilitado cuando un dealer acepte..."
@@ -232,7 +266,7 @@ export default function OrderDetailPage() {
                 <button
                   onClick={handleSend}
                   disabled={sending || !newMsg.trim() || order.status === "pending"}
-                  className="bg-[#ff6b35] text-white rounded-full w-10 h-10 flex items-center justify-center disabled:opacity-50 hover:bg-[#e55a2b] transition-colors"
+                  className="bg-[#25c462] text-white rounded-full w-10 h-10 flex items-center justify-center disabled:opacity-50 hover:bg-[#e55a2b] transition-colors"
                 >
                   ➤
                 </button>

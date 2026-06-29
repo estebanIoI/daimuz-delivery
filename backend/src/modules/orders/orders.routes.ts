@@ -131,6 +131,23 @@ router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
   }
 });
 
+router.get('/:id/validation', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT ov.validation_code, ov.qr_token, ov.validated FROM order_validations ov JOIN orders o ON o.id = ov.order_id WHERE ov.order_id = ? AND (o.customer_id = ? OR o.dealer_id = ?)',
+      [req.params.id, req.user!.userId, req.user!.userId]
+    );
+    const vals = rows as any[];
+    if (vals.length === 0) {
+      res.status(404).json({ error: 'Validación no encontrada' });
+      return;
+    }
+    res.json({ validation: vals[0] });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener validación' });
+  }
+});
+
 router.patch('/:id/status', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { status } = req.body;

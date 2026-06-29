@@ -88,7 +88,7 @@ export default function CheckoutPage() {
       });
 
       clearCart();
-      router.push(`/orders/${data.order.id}`);
+      router.push(`/checkout/dealers?order_id=${data.order.id}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Error al crear el pedido");
     } finally {
