@@ -27,6 +27,7 @@ interface OrderDetail {
   created_at: string;
   dealer_id: string | null;
   validation_id: string | null;
+  payment_method: string | null;
 }
 
 interface OrderValidation {
@@ -44,11 +45,18 @@ interface TrackingPoint {
 const STATUS_STEPS = ["pending", "accepted", "picked_up", "in_transit", "delivered"];
 const STATUS_LABELS: Record<string, string> = {
   pending: "Pendiente",
+  waiting_dealer: "Esperando repartidor",
   accepted: "Aceptado",
   picked_up: "Recogido",
   in_transit: "En camino",
   delivered: "Entregado",
   cancelled: "Cancelado",
+};
+
+const PAYMENT_LABELS: Record<string, string> = {
+  efectivo: "Efectivo 💵",
+  transferencia: "Transferencia 📲",
+  datafono: "Datáfono 💳",
 };
 
 export default function OrderDetailPage() {
@@ -94,6 +102,15 @@ export default function OrderDetailPage() {
       setTimeout(() => {
         scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
       }, 100);
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleSelectPayment = async (method: string) => {
+    try {
+      await api(`/orders/${id}/payment`, { method: "PATCH", body: { payment_method: method } });
+      loadOrder();
     } catch {
       // ignore
     }
@@ -175,10 +192,45 @@ export default function OrderDetailPage() {
                 {STATUS_LABELS[order.status]} · {order.delivery_address}
               </p>
 
-              {/* Código de validación QR */}
-              {validation && !validation.validated && order.status !== "delivered" && (
+              {/* Elegir dealer (pedido recién creado) */}
+              {!order.dealer_id && order.status === "pending" && (
+                <button
+                  onClick={() => router.push(`/checkout/dealers?order_id=${order.id}`)}
+                  className="mt-3 w-full bg-[#25c462] text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-[#1aaa52]"
+                >
+                  🛵 Elegir repartidor
+                </button>
+              )}
+
+              {/* Esperando que el dealer acepte */}
+              {order.status === "waiting_dealer" && (
+                <div className="mt-3 bg-orange-50 border border-orange-100 rounded-xl p-3 text-center">
+                  <p className="text-sm text-orange-600 font-semibold">⏳ Esperando que el repartidor acepte...</p>
+                  <p className="text-[11px] text-gray-400 mt-0.5">Te avisaremos cuando confirme tu pedido</p>
+                </div>
+              )}
+
+              {/* Repartidor aceptó → elegir método de pago */}
+              {order.dealer_id && !order.payment_method && order.status !== "pending" && order.status !== "waiting_dealer" && order.status !== "cancelled" && (
+                <div className="mt-3 bg-white border border-[#25c462]/40 rounded-xl p-3 shadow-sm">
+                  <p className="text-sm font-bold text-gray-800">✅ ¡Repartidor confirmado!</p>
+                  <p className="text-xs text-gray-500 mb-2.5">Elige cómo vas a pagar para confirmar</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[{ k: "efectivo", e: "💵", l: "Efectivo" }, { k: "transferencia", e: "📲", l: "Transfer." }, { k: "datafono", e: "💳", l: "Datáfono" }].map((opt) => (
+                      <button key={opt.k} onClick={() => handleSelectPayment(opt.k)} className="border border-gray-200 rounded-xl py-2.5 flex flex-col items-center gap-1 hover:border-[#25c462] hover:bg-green-50 active:scale-95 transition-all">
+                        <span className="text-xl">{opt.e}</span>
+                        <span className="text-[11px] font-medium text-gray-600">{opt.l}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Pago elegido → mostrar código de validación */}
+              {validation && !validation.validated && order.payment_method && order.status !== "delivered" && (
                 <div className="mt-3 bg-[#f0fdf4] border border-[#25c462]/30 rounded-xl p-3 text-center">
-                  <p className="text-xs text-gray-500 mb-1">Muestra este código al dealer</p>
+                  <p className="text-[11px] text-gray-500 mb-2">Pago: <span className="font-semibold text-gray-700">{PAYMENT_LABELS[order.payment_method] || order.payment_method}</span></p>
+                  <p className="text-xs text-gray-500 mb-1">Muestra este código al repartidor al recibir</p>
                   <p className="text-3xl font-black text-gray-900 tracking-widest font-mono">{validation.validation_code}</p>
                   <p className="text-[10px] text-gray-400 mt-1">Código de validación de entrega</p>
                 </div>
@@ -187,14 +239,6 @@ export default function OrderDetailPage() {
                 <div className="mt-2 bg-green-50 rounded-xl p-2 text-center">
                   <p className="text-xs text-green-600 font-semibold">✅ Entrega validada</p>
                 </div>
-              )}
-              {!order.dealer_id && order.status === "pending" && (
-                <button
-                  onClick={() => router.push(`/checkout/dealers?order_id=${order.id}`)}
-                  className="mt-2 w-full bg-[#25c462] text-white py-2 rounded-xl text-xs font-semibold hover:bg-[#1aaa52]"
-                >
-                  🛵 Elegir dealer
-                </button>
               )}
             </div>
 

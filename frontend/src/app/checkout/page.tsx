@@ -102,7 +102,8 @@ export default function CheckoutPage() {
     <div className="min-h-screen flex flex-col pb-16">
       <Navbar />
       <main className="flex-1 max-w-lg mx-auto w-full px-4 py-4">
-        <h2 className="text-xl font-bold mb-4">Finalizar pedido</h2>
+        <h2 className="text-xl font-bold mb-1">Confirmar pedido</h2>
+        <p className="text-sm text-gray-500 mb-4">Luego eliges repartidor y forma de pago</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
@@ -111,7 +112,7 @@ export default function CheckoutPage() {
               type="button"
               onClick={handleGetLocation}
               disabled={gettingLocation}
-              className="w-full border-2 border-dashed border-gray-300 rounded-xl py-6 text-gray-500 hover:border-[#ff6b35] hover:text-[#ff6b35] transition-colors disabled:opacity-50"
+              className="w-full border-2 border-dashed border-gray-300 rounded-xl py-6 text-gray-500 hover:border-[#25c462] hover:text-[#25c462] transition-colors disabled:opacity-50"
             >
               {gettingLocation ? "📍 Obteniendo ubicación..." : userLat ? "📍 Ubicación obtenida ✅" : "📍 Toca para obtener tu ubicación"}
             </button>
@@ -126,7 +127,7 @@ export default function CheckoutPage() {
               type="text"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6b35] focus:border-transparent"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#25c462] focus:border-transparent"
               placeholder="Calle, número, referencia..."
               required
             />
@@ -137,16 +138,16 @@ export default function CheckoutPage() {
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6b35] focus:border-transparent resize-none"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#25c462] focus:border-transparent resize-none"
               placeholder="Ej: Timbre no funciona, llamar al llegar..."
               rows={2}
             />
           </div>
 
-          <div className="bg-[#fff5f0] rounded-xl p-4 border border-[#ff6b35]/20">
+          <div className="bg-[#f0fdf4] rounded-xl p-4 border border-[#25c462]/20">
             <div className="flex justify-between items-center">
               <span className="text-gray-700 font-medium">{items.length} producto(s)</span>
-              <span className="text-2xl font-bold text-[#ff6b35]">${total().toFixed(0)}</span>
+              <span className="text-2xl font-bold text-[#25c462]">${total().toFixed(0)}</span>
             </div>
           </div>
 
@@ -159,9 +160,9 @@ export default function CheckoutPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#ff6b35] text-white py-3.5 rounded-xl font-medium hover:bg-[#e55a2b] disabled:opacity-50 transition-colors text-lg"
+            className="w-full bg-[#25c462] text-white py-3.5 rounded-xl font-medium hover:bg-[#1aaa52] disabled:opacity-50 transition-colors text-lg"
           >
-            {loading ? "Creando pedido..." : "Realizar pedido"}
+            {loading ? "Creando pedido..." : "Elegir repartidor →"}
           </button>
         </form>
       </main>

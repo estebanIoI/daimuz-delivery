@@ -17,13 +17,25 @@ interface Order {
   customer_phone: string;
 }
 
+interface DealerRequest {
+  id: string;
+  order_id: string;
+  status: string;
+  total: number;
+  delivery_address: string;
+  notes: string | null;
+  created_at: string;
+}
+
 export default function DealerPage() {
   const user = useAuthStore((s) => s.user);
   const router = useRouter();
+  const [requests, setRequests] = useState<DealerRequest[]>([]);
   const [availableOrders, setAvailableOrders] = useState<Order[]>([]);
   const [activeOrders, setActiveOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState<string | null>(null);
+  const [responding, setResponding] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -31,7 +43,7 @@ export default function DealerPage() {
       return;
     }
     if (user.role !== "dealer") {
-      router.push(user.role === "customer" ? "/menu" : "/admin");
+      router.push(user.role === "customer" ? "/" : "/admin");
       return;
     }
     loadData();
@@ -41,16 +53,30 @@ export default function DealerPage() {
 
   const loadData = async () => {
     try {
-      const [avail, active] = await Promise.all([
-        api<{ orders: Order[] }>("/delivery/available"),
-        api<{ orders: Order[] }>("/delivery/my-active"),
+      const [reqs, avail, active] = await Promise.all([
+        api<{ requests: DealerRequest[] }>("/dealers/requests").catch(() => ({ requests: [] })),
+        api<{ orders: Order[] }>("/delivery/available").catch(() => ({ orders: [] })),
+        api<{ orders: Order[] }>("/delivery/my-active").catch(() => ({ orders: [] })),
       ]);
+      setRequests((reqs.requests || []).map((r) => ({ ...r, total: Number(r.total) })));
       setAvailableOrders(avail.orders);
       setActiveOrders(active.orders);
     } catch {
       // ignore
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRespond = async (requestId: string, action: "accept" | "reject") => {
+    setResponding(requestId);
+    try {
+      await api(`/dealers/respond/${requestId}`, { method: "POST", body: { action } });
+      loadData();
+    } catch {
+      // ignore
+    } finally {
+      setResponding(null);
     }
   };
 
@@ -72,7 +98,7 @@ export default function DealerPage() {
     <div className="min-h-screen flex flex-col pb-16">
       <Navbar />
       <main className="flex-1 max-w-lg mx-auto w-full px-4 py-4 space-y-6">
-        <div className="bg-gradient-to-r from-[#ff6b35] to-[#ff8c5a] rounded-2xl p-5 text-white">
+        <div className="bg-gradient-to-r from-[#25c462] to-[#4cd97e] rounded-2xl p-5 text-white">
           <h2 className="text-xl font-bold">{user.name}</h2>
           <p className="text-sm opacity-80 mt-1">
             {user.dealerStats?.rank || "Bronze"} · {user.dealerStats?.xp || 0} XP
@@ -89,6 +115,41 @@ export default function DealerPage() {
           </div>
         </div>
 
+        {/* Solicitudes dirigidas a este dealer */}
+        {requests.length > 0 && (
+          <div>
+            <h3 className="font-bold text-gray-700 mb-2">🔔 Te eligieron ({requests.length})</h3>
+            <div className="space-y-2">
+              {requests.map((r) => (
+                <div key={r.id} className="bg-[#f0fdf4] border border-[#25c462]/40 rounded-xl p-4">
+                  <div className="flex justify-between mb-1">
+                    <p className="font-semibold text-sm">Pedido #{r.order_id.slice(0, 8)}</p>
+                    <span className="text-[#25c462] font-bold">${r.total.toLocaleString("es-CO")}</span>
+                  </div>
+                  <p className="text-sm text-gray-600">{r.delivery_address}</p>
+                  {r.notes && <p className="text-xs text-gray-400 mt-1">📝 {r.notes}</p>}
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      onClick={() => handleRespond(r.id, "reject")}
+                      disabled={responding === r.id}
+                      className="flex-1 border border-gray-200 text-gray-500 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      Rechazar
+                    </button>
+                    <button
+                      onClick={() => handleRespond(r.id, "accept")}
+                      disabled={responding === r.id}
+                      className="flex-1 bg-[#25c462] text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-[#1aaa52] disabled:opacity-50"
+                    >
+                      {responding === r.id ? "..." : "Aceptar"}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {activeOrders.length > 0 && (
           <div>
             <h3 className="font-bold text-gray-700 mb-2">🚀 Pedidos activos</h3>
@@ -101,7 +162,7 @@ export default function DealerPage() {
                 >
                   <div className="flex justify-between">
                     <p className="font-medium text-sm">#{order.id.slice(0, 8)}</p>
-                    <span className="text-[#ff6b35] font-bold">${order.total.toFixed(0)}</span>
+                    <span className="text-[#25c462] font-bold">${order.total.toFixed(0)}</span>
                   </div>
                   <p className="text-xs text-gray-500 mt-1">{order.delivery_address}</p>
                   <p className="text-xs text-blue-600 mt-1">📍 {order.customer_name}</p>
@@ -137,7 +198,7 @@ export default function DealerPage() {
                         })}
                       </p>
                     </div>
-                    <span className="text-[#ff6b35] font-bold">${order.total.toFixed(0)}</span>
+                    <span className="text-[#25c462] font-bold">${order.total.toFixed(0)}</span>
                   </div>
                   <p className="text-sm text-gray-600">{order.delivery_address}</p>
                   <p className="text-xs text-gray-400 mt-1">
@@ -146,7 +207,7 @@ export default function DealerPage() {
                   <button
                     onClick={() => handleAccept(order.id)}
                     disabled={accepting === order.id}
-                    className="mt-3 w-full bg-[#ff6b35] text-white py-2.5 rounded-xl font-medium hover:bg-[#e55a2b] disabled:opacity-50 transition-colors"
+                    className="mt-3 w-full bg-[#25c462] text-white py-2.5 rounded-xl font-medium hover:bg-[#1aaa52] disabled:opacity-50 transition-colors"
                   >
                     {accepting === order.id ? "Aceptando..." : "Aceptar pedido"}
                   </button>

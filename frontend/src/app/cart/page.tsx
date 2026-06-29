@@ -88,7 +88,7 @@ export default function CartPage() {
               onClick={() => user ? router.push("/checkout") : router.push("/login")}
               className="w-full bg-[#25c462] text-white py-4 rounded-2xl font-semibold text-base hover:bg-[#1aaa52] active:scale-[0.98] transition-all"
             >
-              Ir a pagar · ${(total() + DELIVERY_FEE).toLocaleString("es-CO")}
+              Confirmar pedido · ${(total() + DELIVERY_FEE).toLocaleString("es-CO")}
             </button>
           </div>
         </div>

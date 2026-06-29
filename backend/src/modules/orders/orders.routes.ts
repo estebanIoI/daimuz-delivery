@@ -148,10 +148,46 @@ router.get('/:id/validation', authenticate, async (req: AuthRequest, res: Respon
   }
 });
 
+// PATCH /:id/payment — el cliente elige método de pago (tras aceptar el dealer)
+router.patch('/:id/payment', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const { payment_method } = req.body;
+    const allowed = ['efectivo', 'transferencia', 'datafono'];
+    if (!allowed.includes(payment_method)) {
+      res.status(400).json({ error: 'Método de pago inválido' });
+      return;
+    }
+
+    const [orders] = await pool.query('SELECT * FROM orders WHERE id = ?', [req.params.id]);
+    const orderRows = orders as OrderRow[];
+    if (orderRows.length === 0) {
+      res.status(404).json({ error: 'Pedido no encontrado' });
+      return;
+    }
+    if (orderRows[0].customer_id !== req.user!.userId) {
+      res.status(403).json({ error: 'No autorizado' });
+      return;
+    }
+
+    await pool.query('UPDATE orders SET payment_method = ?, updated_at = NOW() WHERE id = ?', [payment_method, req.params.id]);
+
+    const label: Record<string, string> = { efectivo: 'Efectivo', transferencia: 'Transferencia', datafono: 'Datáfono (tarjeta)' };
+    const msgId = uuid();
+    await pool.query(
+      'INSERT INTO messages (id, order_id, sender_id, sender_role, message_type, message) VALUES (?, ?, ?, "system", "system", ?)',
+      [msgId, req.params.id, req.user!.userId, `Pedido confirmado. Pago: ${label[payment_method]}.`]
+    );
+
+    res.json({ success: true, payment_method });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al registrar el pago' });
+  }
+});
+
 router.patch('/:id/status', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { status } = req.body;
-    const validStatuses = ['pending', 'accepted', 'picked_up', 'in_transit', 'delivered', 'cancelled'];
+    const validStatuses = ['pending', 'waiting_dealer', 'accepted', 'picked_up', 'in_transit', 'delivered', 'cancelled'];
 
     if (!validStatuses.includes(status)) {
       res.status(400).json({ error: 'Estado inválido' });
