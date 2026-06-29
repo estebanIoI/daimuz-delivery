@@ -5,7 +5,7 @@ import fs from 'fs';
 import { v4 as uuid } from 'uuid';
 import { AuthRequest } from '../../types';
 import { authenticate } from '../../middleware/auth';
-import { cloudinaryEnabled, uploadToCloudinary } from '../../config/cloudinary';
+import { isCloudinaryEnabled, uploadToCloudinary } from '../../config/cloudinary';
 
 // Guardamos en memoria para poder enviar el buffer a Cloudinary.
 // Si Cloudinary no está configurado, escribimos el buffer a disco local.
@@ -52,7 +52,7 @@ router.post(
     }
 
     try {
-      if (cloudinaryEnabled) {
+      if (await isCloudinaryEnabled()) {
         const url = await uploadToCloudinary(file.buffer);
         res.status(201).json({ url, provider: 'cloudinary' });
         return;

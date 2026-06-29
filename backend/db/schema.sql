@@ -161,3 +161,10 @@ CREATE TABLE IF NOT EXISTS reward_wallets (
   updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+-- Configuración de la aplicación (key-value): credenciales Cloudinary, etc.
+CREATE TABLE IF NOT EXISTS app_settings (
+  setting_key     VARCHAR(100) PRIMARY KEY,
+  setting_value   TEXT,
+  updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;

@@ -11,6 +11,7 @@ import deliveryRoutes from '../modules/delivery/delivery.routes';
 import messagesRoutes from '../modules/messages/messages.routes';
 import trackingRoutes from '../modules/tracking/tracking.routes';
 import uploadRoutes from '../modules/upload/upload.routes';
+import settingsRoutes from '../modules/settings/settings.routes';
 
 const router = Router();
 
@@ -26,5 +27,6 @@ router.use('/delivery', deliveryRoutes);
 router.use('/chat', messagesRoutes);
 router.use('/tracking', trackingRoutes);
 router.use('/upload', uploadRoutes);
+router.use('/settings', settingsRoutes);
 
 export default router;
