@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-daimuz: #ff6b35;
+  --color-daimuz-dark: #e55a2b;
+  --color-daimuz-light: #ff8c5a;
+  --color-daimuz-bg: #fff5f0;
+  --color-surface: #ffffff;
+  --color-muted: #6b7280;
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: #f9fafb;
+  color: #111827;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+input, textarea, select, button {
+  font-family: inherit;
+}

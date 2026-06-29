@@ -1,0 +1,8 @@
+# DAIMUZ Delivery - Phase 1 MVP
+
+node_modules/
+dist/
+.next/
+.env
+uploads/*
+!uploads/.gitkeep
